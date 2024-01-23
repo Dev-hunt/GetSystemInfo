@@ -56,8 +56,10 @@ def get_public_ip():
 def get_installed_software():
     try:
         result = subprocess.run(["wmic", "product", "get", "name"], capture_output=True, text=True)
-        installed_software = result.stdout.strip().split('\n')[1:]
-        return installed_software
+        installed_software = [software.strip() for software in result.stdout.strip().split('\n')[1:] if software.strip()]
+        for idx, software in enumerate(installed_software, start=1):
+            print(f"{idx}. {software}")
+        return len(installed_software)
     except Exception as e:
         print(f"Error: {e}")
         return []
@@ -69,7 +71,7 @@ def get_internet_speed():
         upload_speed = st.upload()
         download_speed_kbps=round(download_speed/1024,2)
         upload_speed_kbps=round(upload_speed/1024,2)
-        return f"{download_speed_kbps}Kbps, {upload_speed_kbps}Kbps"
+        return f"{download_speed_kbps}Kbps, ^{upload_speed_kbps}Kbps"
     except Exception as e:
         print(f"Error: {e}")
     
@@ -81,6 +83,7 @@ def gather_system_info():
     with concurrent.futures.ThreadPoolExecutor(max_workers=11) as executor:
         # Define the functions to run in parallel
         functions = [
+            get_installed_software,
             get_cpu_info,
             get_cpu_cores,
             get_cpu_threads,
@@ -89,7 +92,6 @@ def gather_system_info():
             get_screen_size,
             get_mac_address,
             get_public_ip,
-            get_installed_software,
             get_internet_speed,
             get_os_version,
         ]
@@ -98,7 +100,7 @@ def gather_system_info():
         results = executor.map(lambda func: func(), functions)
 
 
-        system_info = dict(zip([func.__name__ for func in functions], results))
+        system_info = dict(zip([func.__name__[4:] for func in functions], results))
 
     return system_info
 
